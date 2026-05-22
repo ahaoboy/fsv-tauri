@@ -11,8 +11,8 @@ function base(apiBase: string): string {
  * Fetch WebSocket connection statistics
  */
 export async function getWsInfo(apiBase: string): Promise<WsInfo> {
-  const url = `${base(apiBase)}/api/ws-info`;
-  const res = await fetch(url);
+  const url = `${base(apiBase)}/ws-info`;
+  const res = await fetch(url, { method: 'POST' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -21,8 +21,8 @@ export async function getWsInfo(apiBase: string): Promise<WsInfo> {
  * Check server health
  */
 export async function checkHealth(apiBase: string): Promise<HealthStatus> {
-  const url = `${base(apiBase)}/api/health`;
-  const res = await fetch(url);
+  const url = `${base(apiBase)}/health`;
+  const res = await fetch(url, { method: 'POST' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
