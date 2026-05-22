@@ -50,7 +50,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 11
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -111,9 +111,6 @@ jobs:
         if: matrix.mobile == 'android'
         run: |
           pnpm tauri android init
-      - name: git after init
-        run: |
-          git diff
       - name: setup Android signing
         if: matrix.mobile == 'android'
         run: |
@@ -127,14 +124,11 @@ jobs:
       #   if: matrix.mobile == 'android'
       #   run: |
       #     cargo install -q cross --git https://github.com/cross-rs/cross
-      - name: git after signing
-        run: |
-          git diff
       - name: Build
         uses: tauri-apps/tauri-action@e839bb55b23d177d8cb537c2e10f41decb2d1089
         with:
           tagName: app-v__VERSION__
-          releaseName: "App v__VERSION__"
+          releaseName: "fsv v__VERSION__"
           releaseBody: "See the assets to download this version and install."
           args: ${{ matrix.args }}
           mobile: ${{ matrix.mobile }}
@@ -142,6 +136,3 @@ jobs:
           uploadPlainBinary: true
           releaseDraft: false
           prerelease: false
-      - name: git after action
-        run: |
-          git diff
