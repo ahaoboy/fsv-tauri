@@ -1,5 +1,5 @@
 {
-  "name": "fsv-tauri",
+  "name": "fsv",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -7,6 +7,10 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "android": "tauri android",
+    "android:dev": "tauri android dev",
+    "android:build": "tauri android build --target aarch64",
+    "icon": "tauri icon ./public/icon-android.png && cp public/icon.ico src-tauri/icons/icon.ico",
     "tauri": "tauri"
   },
   "dependencies": {

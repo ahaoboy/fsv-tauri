@@ -12,18 +12,35 @@
   "app": {
     "windows": [
       {
-        "title": "fsv-tauri",
-        "width": 800,
-        "height": 600
+        "title": "fsv",
+        "width": 393,
+        "height": 852,
+        "decorations": true,
+        "transparent": true,
+        "resizable": false,
+        "center": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "freezePrototype": false,
+      "assetProtocol": {
+        "enable": true,
+        "scope": {
+          "allow": [
+            "**"
+          ]
+        }
+      },
+      "capabilities": [
+        "default"
+      ]
     }
   },
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -31,5 +48,16 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "windows": {
+        "installMode": "passive"
+      },
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZFMjhDMzdDNjlBMUU3REUKUldUZTU2RnBmTU1vYm1yRy85dU5adThyVGFQaVRlR0VvRlhIM081WTZ4ZHRwazBSWE1HVWhpK04K",
+      "endpoints": [
+        "https://github.com/ahaoboy/musicfree-tauri/releases/latest/download/latest.json"
+      ]
+    }
   }
 }

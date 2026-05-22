@@ -75,8 +75,11 @@ async fn get_server_status(state: State<'_, ServerState>) -> Result<Option<Serve
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_fs::init())
         .manage(ServerState {
             handle: Mutex::new(None),
             info: Mutex::new(None),
@@ -85,7 +88,15 @@ pub fn run() {
             start_server,
             stop_server,
             get_server_status,
-        ])
+        ]);
+
+    #[cfg(target_os = "windows")]
+    let builder = builder
+        // .plugin(tauri_plugin_media::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}));
+
+    builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
