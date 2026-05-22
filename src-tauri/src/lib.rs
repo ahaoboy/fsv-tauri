@@ -171,6 +171,7 @@ async fn get_available_directories(app: tauri::AppHandle) -> Result<Vec<Director
     }
 
     // Desktop directory
+    #[cfg(not(target_os = "android"))]
     if let Ok(desktop_path) = path_resolver.desktop_dir() {
         try_add_directory(&mut directories, desktop_path, "Desktop", "🖥️");
     }
