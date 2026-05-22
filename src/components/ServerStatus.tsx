@@ -1,4 +1,5 @@
 import { ServerInfo } from '../types';
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 interface ServerStatusProps {
   isRunning: boolean;
@@ -11,7 +12,7 @@ interface ServerStatusProps {
 
 /**
  * ServerStatus component for displaying server information
- * Shows IP:port selector with copy button in a single line
+ * Shows IP:port selector with copy and open buttons in a single line
  */
 export function ServerStatus({
   isRunning,
@@ -24,6 +25,12 @@ export function ServerStatus({
   if (!isRunning || !serverInfo) {
     return null;
   }
+
+  const serverUrl = `http://${selectedIp}:${serverInfo.port}`;
+
+  const handleOpenUrl = () => {
+    openUrl(serverUrl);
+  };
 
   return (
     <div class="server-status">
@@ -45,6 +52,13 @@ export function ServerStatus({
           title={copied ? 'Copied!' : 'Copy URL'}
         >
           {copied ? '✓' : '📋'}
+        </button>
+        <button
+          class="open-btn"
+          onClick={handleOpenUrl}
+          title="Open in browser"
+        >
+          🔗
         </button>
       </div>
     </div>

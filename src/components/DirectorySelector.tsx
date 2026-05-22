@@ -6,6 +6,7 @@ interface DirectorySelectorProps {
   value: string;
   onChange: (path: string) => void;
   disabled?: boolean;
+  wsConnected?: number;
 }
 
 /**
@@ -14,8 +15,9 @@ interface DirectorySelectorProps {
  * @param value - The currently selected path
  * @param onChange - Callback when directory changes
  * @param disabled - Whether the selector is disabled
+ * @param wsConnected - Number of connected WebSocket clients
  */
-export function DirectorySelector({ value, onChange, disabled = false }: DirectorySelectorProps) {
+export function DirectorySelector({ value, onChange, disabled = false, wsConnected }: DirectorySelectorProps) {
   const [options, setOptions] = useState<DirectoryInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,6 +118,11 @@ export function DirectorySelector({ value, onChange, disabled = false }: Directo
       <label class="selector-label">
         <span class="label-icon">📂</span>
         Directory: {value || options[0]?.path || 'Not selected'}
+        {wsConnected !== undefined && (
+          <span class="ws-badge" title={`${wsConnected} WebSocket connection${wsConnected !== 1 ? 's' : ''}`}>
+            🔗 {wsConnected}
+          </span>
+        )}
       </label>
       <select
         class="selector-input"

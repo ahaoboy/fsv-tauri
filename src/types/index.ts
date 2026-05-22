@@ -17,5 +17,17 @@ export interface Message {
   timestamp: Date;
 }
 
+/** WebSocket connection info */
+export interface WsInfo {
+  connected: number;
+  broadcast_capacity: number;
+}
+
+/** Health check response */
+export interface HealthStatus {
+  status: string;
+  timestamp: number;
+}
+
 // Re-export for backward compatibility
 export type { ServerInfo as ServerInfoType };

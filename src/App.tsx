@@ -11,6 +11,9 @@ import { MessageInput } from './components/MessageInput';
 // Import types
 import { ServerInfo } from './types';
 
+// Import API utilities
+import { getWsInfo } from './utils/api';
+
 function App() {
   // State management
   const [path, setPath] = useState('');
@@ -20,6 +23,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [wsConnected, setWsConnected] = useState<number>(0);
 
   const isRunning = serverInfo !== null;
   const serverUrl = selectedIp ? `http://${selectedIp}:${serverInfo?.port}` : '';
@@ -35,6 +39,31 @@ function App() {
       setSelectedIp(serverInfo.ips[0]);
     }
   }, [serverInfo]);
+
+  // Poll WebSocket connection info when server is running
+  useEffect(() => {
+    if (!isRunning || !serverUrl) {
+      setWsConnected(0);
+      return;
+    }
+
+    const pollWsInfo = async () => {
+      try {
+        const info = await getWsInfo(serverUrl);
+        setWsConnected(info.connected);
+      } catch (err) {
+        console.error('Failed to fetch WS info:', err);
+      }
+    };
+
+    // Initial fetch
+    pollWsInfo();
+
+    // Poll every 2 seconds
+    const interval = setInterval(pollWsInfo, 2000);
+
+    return () => clearInterval(interval);
+  }, [isRunning, serverUrl]);
 
   // Check current server status
   const checkServerStatus = useCallback(async () => {
@@ -122,6 +151,7 @@ function App() {
             value={path}
             onChange={setPath}
             disabled={isRunning || isLoading}
+            wsConnected={isRunning ? wsConnected : undefined}
           />
 
           {/* Port Input - Single Line */}
