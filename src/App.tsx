@@ -64,11 +64,9 @@ function App() {
     }
 
     const pollWsInfo = async () => {
-      try {
-        const info = await getWsInfo(serverUrl);
+      const info = await getWsInfo(serverUrl);
+      if (info) {
         setWsConnected(info.connected);
-      } catch (err) {
-        console.error('Failed to fetch WS info:', err);
       }
     };
 
