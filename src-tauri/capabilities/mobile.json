@@ -9,6 +9,7 @@
     "main"
   ],
   "permissions": [
+    "android-fs:default",
     "opener:default",
     "opener:allow-default-urls",
     "core:default",
@@ -20,6 +21,14 @@
     "os:allow-hostname",
     {
       "identifier": "fs:scope",
+      "allow": [
+        {
+          "path": "**/*"
+        }
+      ]
+    },
+    {
+      "identifier": "android-fs:scope",
       "allow": [
         {
           "path": "**/*"

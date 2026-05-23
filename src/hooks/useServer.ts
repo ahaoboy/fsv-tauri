@@ -3,6 +3,31 @@ import { invoke } from "@tauri-apps/api/core";
 import { getWsInfo } from "../utils/api";
 import type { ServerInfo } from "../types";
 
+/** localStorage key for persisting the selected directory */
+const STORAGE_KEY = "fsv_selected_directory";
+
+/** Read the last saved directory from localStorage, or empty string if none */
+function getSavedDirectory(): string {
+  try {
+    return localStorage.getItem(STORAGE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+/** Persist the selected directory to localStorage */
+function saveDirectory(dir: string): void {
+  try {
+    if (dir) {
+      localStorage.setItem(STORAGE_KEY, dir);
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  } catch {
+    // Silently ignore — may fail in private browsing or storage-full scenarios
+  }
+}
+
 /**
  * Custom hook that encapsulates all server-related state and actions:
  * - Starting / stopping the server
@@ -11,7 +36,7 @@ import type { ServerInfo } from "../types";
  * - Copying the server URL to clipboard
  */
 export function useServer() {
-  const [path, setPath] = useState("");
+  const [path, setPath] = useState(getSavedDirectory);
   const [port, setPort] = useState("8888");
   const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null);
   const [selectedIp, setSelectedIp] = useState<string>("");
@@ -38,6 +63,11 @@ export function useServer() {
       setSelectedIp(serverInfo.ips[0]);
     }
   }, [serverInfo]);
+
+  // Persist selected directory to localStorage whenever it changes
+  useEffect(() => {
+    saveDirectory(path);
+  }, [path]);
 
   // Poll WebSocket connection info while server is running
   useEffect(() => {
