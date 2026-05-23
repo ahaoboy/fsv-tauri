@@ -112,171 +112,147 @@ async fn get_available_directories(app: tauri::AppHandle) -> Result<Vec<Director
     let path_resolver = app.path();
     let mut directories = Vec::new();
 
-    // Helper function to validate directory: exists, accessible
-    // On Android, we don't check if directory is empty because system dirs might be empty
+    // Helper function to validate directory: exists, accessible, and not empty
     fn is_valid_directory(path: &std::path::Path) -> bool {
-        // Check if path exists and is a directory
         if !path.exists() || !path.is_dir() {
             return false;
         }
 
-        // Check if we can read metadata (accessibility check)
         if fs::metadata(path).is_err() {
             return false;
         }
 
-        // On Android, allow empty directories
-        #[cfg(target_os = "android")]
-        {
-            // Just check if we can read the directory
-            fs::read_dir(path).is_ok()
-        }
-
-        // On other platforms, check if directory is not empty
-        #[cfg(not(target_os = "android"))]
-        {
-            match fs::read_dir(path) {
-                Ok(mut entries) => {
-                    // Directory is valid if it has at least one entry
-                    entries.next().is_some()
-                }
-                Err(_) => false, // Can't read directory, consider it invalid
-            }
+        // Check if directory is not empty and accessible
+        match fs::read_dir(path) {
+            Ok(mut entries) => entries.next().is_some(),
+            Err(_) => false,
         }
     }
 
-    // Helper function to add directory if valid
+    // Helper function to add directory if valid and not duplicate
+    // Returns true if directory was added successfully
     fn try_add_directory(
         directories: &mut Vec<DirectoryInfo>,
         path: std::path::PathBuf,
         name: &str,
         icon: &str,
-    ) {
-        #[cfg(target_os = "android")]
-        println!("Checking directory: {} -> {:?}", name, path);
-        
+    ) -> bool {
+        // Check if this category name already exists
+        if directories.iter().any(|d| d.name == name) {
+            return false;
+        }
+
         if is_valid_directory(&path) {
-            #[cfg(target_os = "android")]
-            println!("✓ Added directory: {} -> {:?}", name, path);
-            
             directories.push(DirectoryInfo {
                 name: name.to_string(),
                 path: path.to_string_lossy().to_string(),
                 icon: icon.to_string(),
             });
+            true
         } else {
-            #[cfg(target_os = "android")]
-            println!("✗ Skipped directory: {} -> {:?}", name, path);
+            false
         }
     }
 
     // Home directory
     if let Ok(home_path) = path_resolver.home_dir() {
-        try_add_directory(&mut directories, home_path, "Home", "🏠");
+        let _ = try_add_directory(&mut directories, home_path, "Home", "🏠");
     }
 
-    // Android-specific directories (check these first on Android)
+    // Android-specific directories
     #[cfg(target_os = "android")]
     {
         use std::path::PathBuf;
         
-        println!("=== Android Storage Detection ===");
+        // Priority order: try environment variables first, then common paths
         
-        // External storage (SD card or emulated storage)
-        if let Ok(external_storage) = std::env::var("EXTERNAL_STORAGE") {
-            println!("EXTERNAL_STORAGE: {}", external_storage);
-            let external_path = PathBuf::from(&external_storage);
-            try_add_directory(&mut directories, external_path.clone(), "Internal Storage", "💾");
-            
-            // Common subdirectories in Android external storage
-            try_add_directory(&mut directories, external_path.join("DCIM"), "Camera", "📷");
-            try_add_directory(&mut directories, external_path.join("Pictures"), "Pictures", "🖼️");
-            try_add_directory(&mut directories, external_path.join("Download"), "Downloads", "📥");
-            try_add_directory(&mut directories, external_path.join("Documents"), "Documents", "📄");
-            try_add_directory(&mut directories, external_path.join("Music"), "Music", "🎵");
-            try_add_directory(&mut directories, external_path.join("Movies"), "Videos", "🎬");
-            try_add_directory(&mut directories, external_path.join("Podcasts"), "Podcasts", "🎙️");
-            try_add_directory(&mut directories, external_path.join("Audiobooks"), "Audiobooks", "📚");
-        } else {
-            println!("EXTERNAL_STORAGE not found");
+        // Internal Storage - try multiple sources
+        let internal_storage_paths = vec![
+            std::env::var("EXTERNAL_STORAGE").ok().map(PathBuf::from),
+            Some(PathBuf::from("/storage/emulated/0")),
+            Some(PathBuf::from("/sdcard")),
+        ];
+        
+        for path_opt in internal_storage_paths {
+            if let Some(path) = path_opt {
+                if try_add_directory(&mut directories, path.clone(), "Internal Storage", "💾") {
+                    // Found valid internal storage, now try subdirectories
+                    try_add_directory(&mut directories, path.join("Download"), "Downloads", "�");
+                    try_add_directory(&mut directories, path.join("DCIM"), "Camera", "�");
+                    try_add_directory(&mut directories, path.join("Pictures"), "Pictures", "�️");
+                    try_add_directory(&mut directories, path.join("Documents"), "Documents", "📄");
+                    try_add_directory(&mut directories, path.join("Music"), "Music", "🎵");
+                    try_add_directory(&mut directories, path.join("Movies"), "Videos", "🎬");
+                    try_add_directory(&mut directories, path.join("Podcasts"), "Podcasts", "🎙️");
+                    try_add_directory(&mut directories, path.join("Audiobooks"), "Audiobooks", "📚");
+                    break; // Stop after finding first valid internal storage
+                }
+            }
         }
         
-        // Secondary external storage (actual SD card)
-        if let Ok(secondary_storage) = std::env::var("SECONDARY_STORAGE") {
-            println!("SECONDARY_STORAGE: {}", secondary_storage);
-            let secondary_path = PathBuf::from(secondary_storage);
-            try_add_directory(&mut directories, secondary_path, "SD Card", "💳");
+        // SD Card - try multiple sources
+        let sd_card_paths = vec![
+            std::env::var("SECONDARY_STORAGE").ok().map(PathBuf::from),
+            Some(PathBuf::from("/mnt/sdcard")),
+        ];
+        
+        for path_opt in sd_card_paths {
+            if let Some(path) = path_opt {
+                if try_add_directory(&mut directories, path, "SD Card", "�") {
+                    break; // Stop after finding first valid SD card
+                }
+            }
         }
         
-        // App-specific external storage (doesn't require permissions on Android 10+)
+        // App-specific directories (always accessible without permissions)
         if let Ok(app_dir) = path_resolver.app_data_dir() {
-            try_add_directory(&mut directories, app_dir, "App Data", "📦");
+            try_add_directory(&mut directories, app_dir, "App Data", "�");
         }
         
         if let Ok(cache_dir) = path_resolver.app_cache_dir() {
             try_add_directory(&mut directories, cache_dir, "App Cache", "🗂️");
         }
-        
-        // Try common Android paths directly
-        let common_paths = vec![
-            ("/storage/emulated/0", "Internal Storage", "💾"),
-            ("/storage/emulated/0/Download", "Downloads", "📥"),
-            ("/storage/emulated/0/DCIM", "Camera", "📷"),
-            ("/storage/emulated/0/Pictures", "Pictures", "🖼️"),
-            ("/storage/emulated/0/Documents", "Documents", "📄"),
-            ("/storage/emulated/0/Music", "Music", "🎵"),
-            ("/storage/emulated/0/Movies", "Videos", "🎬"),
-            ("/sdcard", "SD Card", "💳"),
-            ("/mnt/sdcard", "SD Card Alt", "💳"),
-        ];
-        
-        for (path_str, name, icon) in common_paths {
-            let path = PathBuf::from(path_str);
-            try_add_directory(&mut directories, path, name, icon);
-        }
-        
-        println!("=== End Android Storage Detection ===");
     }
 
     // Downloads directory
     if let Ok(downloads_path) = path_resolver.download_dir() {
-        try_add_directory(&mut directories, downloads_path, "Downloads", "📥");
+        let _ = try_add_directory(&mut directories, downloads_path, "Downloads", "📥");
     }
 
     // Documents directory
     if let Ok(documents_path) = path_resolver.document_dir() {
-        try_add_directory(&mut directories, documents_path, "Documents", "📄");
+        let _ = try_add_directory(&mut directories, documents_path, "Documents", "📄");
     }
 
     // Pictures directory
     if let Ok(pictures_path) = path_resolver.picture_dir() {
-        try_add_directory(&mut directories, pictures_path, "Pictures", "🖼️");
+        let _ = try_add_directory(&mut directories, pictures_path, "Pictures", "🖼️");
     }
 
     // Videos directory
     if let Ok(videos_path) = path_resolver.video_dir() {
-        try_add_directory(&mut directories, videos_path, "Videos", "🎬");
+        let _ = try_add_directory(&mut directories, videos_path, "Videos", "🎬");
     }
 
     // Music directory
     if let Ok(music_path) = path_resolver.audio_dir() {
-        try_add_directory(&mut directories, music_path, "Music", "🎵");
+        let _ = try_add_directory(&mut directories, music_path, "Music", "🎵");
     }
 
     // Desktop directory
     #[cfg(not(target_os = "android"))]
     if let Ok(desktop_path) = path_resolver.desktop_dir() {
-        try_add_directory(&mut directories, desktop_path, "Desktop", "🖥️");
+        let _ = try_add_directory(&mut directories, desktop_path, "Desktop", "🖥️");
     }
 
     // Temporary directory
     if let Ok(temp_path) = path_resolver.temp_dir() {
-        try_add_directory(&mut directories, temp_path, "Temporary Files", "🗑️");
+        let _ = try_add_directory(&mut directories, temp_path, "Temporary Files", "🗑️");
     }
 
     // Current directory (working directory)
     if let Ok(current_dir) = std::env::current_dir() {
-        try_add_directory(&mut directories, current_dir, "Current Folder", "📁");
+        let _ = try_add_directory(&mut directories, current_dir, "Current Folder", "📁");
     }
 
     // Remove duplicates based on path
@@ -285,9 +261,6 @@ async fn get_available_directories(app: tauri::AppHandle) -> Result<Vec<Director
     
     // Sort by name for consistent ordering
     directories.sort_by(|a, b| a.name.cmp(&b.name));
-
-    #[cfg(target_os = "android")]
-    println!("Total directories found: {}", directories.len());
 
     Ok(directories)
 }
