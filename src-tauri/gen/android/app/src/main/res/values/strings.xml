@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">fsv-tauri</string>
-    <string name="main_activity_title">fsv-tauri</string>
+    <string name="app_name">fsv</string>
+    <string name="main_activity_title">fsv</string>
 </resources>

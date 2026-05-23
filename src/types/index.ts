@@ -11,6 +11,15 @@ export interface DirectoryInfo {
   icon: string;
 }
 
+export interface FileInfo {
+  name: string;
+  path: string;
+  file_type: string;
+  size: number;
+  is_directory: boolean;
+  modified?: number; // Unix timestamp in seconds
+}
+
 export interface Message {
   id: string;
   text: string;

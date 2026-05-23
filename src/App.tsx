@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'preact/hooks';
 import { invoke } from '@tauri-apps/api/core';
 import './App.css';
+import { downloadDir, homeDir } from '@tauri-apps/api/path';
 
 // Import components
 import { DirectorySelector } from './components/DirectorySelector';
@@ -12,7 +13,7 @@ import { MessageInput } from './components/MessageInput';
 import { ServerInfo } from './types';
 
 // Import API utilities
-import { getWsInfo } from './utils/api';
+import { getWsInfo, listDirectoryFiles } from './utils/api';
 
 function App() {
   // State management
@@ -24,13 +25,28 @@ function App() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [wsConnected, setWsConnected] = useState<number>(0);
-
   const isRunning = serverInfo !== null;
   const serverUrl = selectedIp ? `http://${selectedIp}:${serverInfo?.port}` : '';
 
   // Initialize server status on mount
   useEffect(() => {
     checkServerStatus();
+    requestStoragePermission();
+  }, []);
+
+  // Request storage permission on Android
+  const requestStoragePermission = useCallback(async () => {
+    try {
+      const granted = await invoke<boolean>('request_storage_permission');
+      if (!granted) {
+        console.warn('Storage permission was denied by user');
+        setError('Storage permission is required to access files');
+      } else {
+        console.log('Storage permission granted');
+      }
+    } catch (err) {
+      console.error('Failed to request storage permission:', err);
+    }
   }, []);
 
   // When server info changes, default to first IP

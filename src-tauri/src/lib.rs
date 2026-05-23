@@ -95,6 +95,16 @@ struct DirectoryInfo {
     icon: String,
 }
 
+#[derive(Clone, Serialize)]
+struct FileInfo {
+    name: String,
+    path: String,
+    file_type: String,
+    size: u64,
+    is_directory: bool,
+    modified: Option<u64>, // Unix timestamp in seconds
+}
+
 #[tauri::command]
 async fn get_available_directories(app: tauri::AppHandle) -> Result<Vec<DirectoryInfo>, String> {
     use std::fs;
@@ -288,9 +298,178 @@ async fn get_server_status(state: State<'_, ServerState>) -> Result<Option<Serve
     Ok(info.clone())
 }
 
+#[tauri::command]
+async fn list_directory_files(directory_path: String) -> Result<Vec<FileInfo>, String> {
+    use std::fs;
+    use std::path::Path;
+    use std::time::UNIX_EPOCH;
+
+    let path = Path::new(&directory_path);
+    
+    // Check if path exists and is a directory
+    if !path.exists() {
+        return Err(format!("Path does not exist: {}", directory_path));
+    }
+    
+    if !path.is_dir() {
+        return Err(format!("Path is not a directory: {}", directory_path));
+    }
+
+    // Read directory entries
+    let entries = fs::read_dir(path)
+        .map_err(|e| format!("Failed to read directory: {}", e))?;
+
+    let mut files = Vec::new();
+
+    for entry in entries {
+        let entry = match entry {
+            Ok(e) => e,
+            Err(e) => {
+                eprintln!("Error reading entry: {}", e);
+                continue;
+            }
+        };
+
+        let entry_path = entry.path();
+        let metadata = match entry.metadata() {
+            Ok(m) => m,
+            Err(e) => {
+                eprintln!("Error reading metadata for {:?}: {}", entry_path, e);
+                continue;
+            }
+        };
+
+        let name = entry
+            .file_name()
+            .to_string_lossy()
+            .to_string();
+
+        let is_directory = metadata.is_dir();
+        let size = if is_directory { 0 } else { metadata.len() };
+
+        // Get file extension to determine type
+        let file_type = if is_directory {
+            "directory".to_string()
+        } else {
+            entry_path
+                .extension()
+                .and_then(|ext| ext.to_str())
+                .map(|ext| ext.to_lowercase())
+                .unwrap_or_else(|| "file".to_string())
+        };
+
+        // Get modification time
+        let modified = metadata
+            .modified()
+            .ok()
+            .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+            .map(|duration| duration.as_secs());
+
+        files.push(FileInfo {
+            name,
+            path: entry_path.to_string_lossy().to_string(),
+            file_type,
+            size,
+            is_directory,
+            modified,
+        });
+    }
+
+    // Sort: directories first, then by name
+    files.sort_by(|a, b| {
+        match (a.is_directory, b.is_directory) {
+            (true, false) => std::cmp::Ordering::Less,
+            (false, true) => std::cmp::Ordering::Greater,
+            _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+        }
+    });
+
+    Ok(files)
+}
+
+#[cfg(target_os = "android")]
+fn check_all_files_permission(app: &tauri::AppHandle) -> Result<bool, String> {
+    let window = app.get_webview_window("main")
+        .ok_or_else(|| "Failed to get main window".to_string())?;
+        
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    let res = window.with_webview(move |webview| {
+        webview.jni_handle().exec(move |env, context, _webview| {
+            let res = env.call_method(
+                context,
+                "hasAllFilesPermission",
+                "()Z",
+                &[]
+            )
+            .map_err(|e| format!("JNI call failed: {:?}", e))
+            .and_then(|val| {
+                val.z()
+                    .map_err(|e| format!("Failed to get boolean return: {:?}", e))
+            });
+            let _ = tx.send(res);
+        });
+    });
+
+    if let Err(e) = res {
+        return Err(format!("Webview error: {:?}", e));
+    }
+
+    rx.recv()
+        .map_err(|e| format!("Channel receive failed: {:?}", e))?
+}
+
+#[cfg(target_os = "android")]
+fn request_all_files_permission(app: &tauri::AppHandle) -> Result<(), String> {
+    let window = app.get_webview_window("main")
+        .ok_or_else(|| "Failed to get main window".to_string())?;
+        
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    let res = window.with_webview(move |webview| {
+        webview.jni_handle().exec(move |env, context, _webview| {
+            let res = env.call_method(
+                context,
+                "requestAllFilesPermission",
+                "()V",
+                &[]
+            )
+            .map(|_| ())
+            .map_err(|e| format!("JNI call failed: {:?}", e));
+            let _ = tx.send(res);
+        });
+    });
+
+    if let Err(e) = res {
+        return Err(format!("Webview error: {:?}", e));
+    }
+
+    rx.recv()
+        .map_err(|e| format!("Channel receive failed: {:?}", e))?
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+async fn request_storage_permission(app: tauri::AppHandle) -> Result<bool, String> {
+    match check_all_files_permission(&app) {
+        Ok(true) => Ok(true),
+        _ => {
+            let _ = request_all_files_permission(&app);
+            Ok(false)
+        }
+    }
+}
+
+#[cfg(not(target_os = "android"))]
+#[tauri::command]
+async fn request_storage_permission(_app: tauri::AppHandle) -> Result<bool, String> {
+    // On non-Android platforms, always return true (no permission needed)
+    Ok(true)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder = tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -305,13 +484,22 @@ pub fn run() {
             get_server_status,
             send_message,
             get_available_directories,
+            list_directory_files,
+            request_storage_permission,
         ]);
 
+    #[cfg(target_os = "android")]
+    {
+        builder = builder.plugin(tauri_plugin_android_fs::init());
+    }
+
     #[cfg(target_os = "windows")]
-    let builder = builder
-        // .plugin(tauri_plugin_media::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}));
+    {
+        builder = builder
+            // .plugin(tauri_plugin_media::init())
+            .plugin(tauri_plugin_updater::Builder::new().build())
+            .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}));
+    }
 
     builder
         .run(tauri::generate_context!())

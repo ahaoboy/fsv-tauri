@@ -16,7 +16,7 @@ val tauriProperties = Properties().apply {
 
 android {
     compileSdk = 36
-    namespace = "com.ahaoboy.fsv_tauri"
+    namespace = "com.ahaoboy.fsv"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
         applicationId = "com.ahaoboy.fsv_tauri"
