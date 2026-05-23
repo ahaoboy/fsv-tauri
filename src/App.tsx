@@ -158,6 +158,18 @@ function App() {
   return (
     <main class="app-container">
       <div class="content-wrapper">
+        {/* Directory Info Bar */}
+        <div class="dir-info-bar">
+          <span class="label-icon">📂</span>
+          <span class="label-name">{path.split(/[\\/]/).filter(Boolean).pop() || path}</span>
+          <span class="label-path">{path}</span>
+          {isRunning && wsConnected !== undefined && (
+            <span class="ws-badge" title={`${wsConnected} WebSocket connection${wsConnected !== 1 ? 's' : ''}`}>
+              {wsConnected}
+            </span>
+          )}
+        </div>
+
         {/* Server Control Card */}
         <section class="control-card">
           {/* Directory + Port - Single Row */}
@@ -166,7 +178,6 @@ function App() {
               value={path}
               onChange={setPath}
               disabled={isRunning || isLoading}
-              wsConnected={isRunning ? wsConnected : undefined}
             />
             <input
               type="number"

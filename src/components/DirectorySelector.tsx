@@ -6,7 +6,6 @@ interface DirectorySelectorProps {
   value: string;
   onChange: (path: string) => void;
   disabled?: boolean;
-  wsConnected?: number;
 }
 
 /**
@@ -17,7 +16,7 @@ interface DirectorySelectorProps {
  * @param disabled - Whether the selector is disabled
  * @param wsConnected - Number of connected WebSocket clients
  */
-export function DirectorySelector({ value, onChange, disabled = false, wsConnected }: DirectorySelectorProps) {
+export function DirectorySelector({ value, onChange, disabled = false }: DirectorySelectorProps) {
   const [options, setOptions] = useState<DirectoryInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,10 +65,6 @@ export function DirectorySelector({ value, onChange, disabled = false, wsConnect
     loadDirectories();
   };
 
-  // Get the display name for the currently selected path
-  const selectedName = options.find(opt => opt.path === value)?.name
-    || (value ? value.split(/[\\/]/).filter(Boolean).pop() || value : options[0]?.name || 'Not selected');
-
   if (isLoading) {
     return (
       <div class="directory-selector">
@@ -107,14 +102,6 @@ export function DirectorySelector({ value, onChange, disabled = false, wsConnect
 
   return (
     <div class="directory-selector">
-      <label class="selector-label">
-        {selectedName}
-        {wsConnected !== undefined && (
-          <span class="ws-badge" title={`${wsConnected} WebSocket connection${wsConnected !== 1 ? 's' : ''}`}>
-            {wsConnected}
-          </span>
-        )}
-      </label>
       <select
         class="selector-input"
         value={value || options[0]?.path || ''}
