@@ -66,16 +66,16 @@ export function DirectorySelector({ value, onChange, disabled = false, wsConnect
     loadDirectories();
   };
 
+  // Get the display name for the currently selected path
+  const selectedName = options.find(opt => opt.path === value)?.name
+    || (value ? value.split(/[\\/]/).filter(Boolean).pop() || value : options[0]?.name || 'Not selected');
+
   if (isLoading) {
     return (
       <div class="directory-selector">
-        <label class="selector-label">
-          <span class="label-icon">📂</span>
-          Directory
-        </label>
         <div class="selector-loading">
           <span class="spinner small" />
-          <span>Loading directories...</span>
+          <span>Loading...</span>
         </div>
       </div>
     );
@@ -84,10 +84,6 @@ export function DirectorySelector({ value, onChange, disabled = false, wsConnect
   if (error) {
     return (
       <div class="directory-selector">
-        <label class="selector-label">
-          <span class="label-icon">📂</span>
-          Directory
-        </label>
         <div class="selector-error">
           <span class="error-icon">⚠️</span>
           <span class="error-text">{error}</span>
@@ -102,10 +98,6 @@ export function DirectorySelector({ value, onChange, disabled = false, wsConnect
   if (options.length === 0) {
     return (
       <div class="directory-selector">
-        <label class="selector-label">
-          <span class="label-icon">📂</span>
-          Directory
-        </label>
         <div class="selector-empty">
           <span>No accessible directories found</span>
         </div>
@@ -116,11 +108,10 @@ export function DirectorySelector({ value, onChange, disabled = false, wsConnect
   return (
     <div class="directory-selector">
       <label class="selector-label">
-        <span class="label-icon">📂</span>
-        Directory: {value || options[0]?.path || 'Not selected'}
+        {selectedName}
         {wsConnected !== undefined && (
           <span class="ws-badge" title={`${wsConnected} WebSocket connection${wsConnected !== 1 ? 's' : ''}`}>
-            🔗 {wsConnected}
+            {wsConnected}
           </span>
         )}
       </label>
@@ -132,7 +123,7 @@ export function DirectorySelector({ value, onChange, disabled = false, wsConnect
       >
         {options.map((option: DirectoryInfo) => (
           <option key={option.path} value={option.path}>
-            {option.icon} {option.name}
+            {option.name}
           </option>
         ))}
       </select>

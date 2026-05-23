@@ -160,20 +160,14 @@ function App() {
       <div class="content-wrapper">
         {/* Server Control Card */}
         <section class="control-card">
-          {/* Directory Selection */}
-          <DirectorySelector
-            value={path}
-            onChange={setPath}
-            disabled={isRunning || isLoading}
-            wsConnected={isRunning ? wsConnected : undefined}
-          />
-
-          {/* Port Input - Single Line */}
-          <div class="port-input-group inline">
-            <label class="port-label">
-              <span class="label-icon">🔌</span>
-              Port
-            </label>
+          {/* Directory + Port - Single Row */}
+          <div class="dir-port-row">
+            <DirectorySelector
+              value={path}
+              onChange={setPath}
+              disabled={isRunning || isLoading}
+              wsConnected={isRunning ? wsConnected : undefined}
+            />
             <input
               type="number"
               class="port-input"
