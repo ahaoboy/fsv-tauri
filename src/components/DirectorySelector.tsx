@@ -1,6 +1,19 @@
-import { useState, useEffect } from 'preact/hooks';
-import { getDirectoryOptions, getDefaultDirectory } from '../utils/directories';
-import { DirectoryInfo } from '../types';
+import { useState, useEffect } from "react";
+import {
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
+  Alert,
+  AlertTitle,
+  Button,
+  Typography,
+  Box,
+} from "@mui/material";
+import { getDirectoryOptions, getDefaultDirectory } from "../utils/directories";
+import type { DirectoryInfo } from "../types";
+import type { SelectChangeEvent } from "@mui/material";
 
 interface DirectorySelectorProps {
   value: string;
@@ -9,21 +22,22 @@ interface DirectorySelectorProps {
 }
 
 /**
- * DirectorySelector component for selecting common directories
- * Uses Tauri backend to get actual system directories
- * @param value - The currently selected path
- * @param onChange - Callback when directory changes
- * @param disabled - Whether the selector is disabled
- * @param wsConnected - Number of connected WebSocket clients
+ * DirectorySelector — renders a dropdown of available directories
+ * provided by the Tauri backend. Handles loading, error, and empty states.
  */
-export function DirectorySelector({ value, onChange, disabled = false }: DirectorySelectorProps) {
+export function DirectorySelector({
+  value,
+  onChange,
+  disabled = false,
+}: DirectorySelectorProps) {
   const [options, setOptions] = useState<DirectoryInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load directories on component mount
+  // Load directories on mount
   useEffect(() => {
     loadDirectories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadDirectories = async () => {
@@ -34,86 +48,86 @@ export function DirectorySelector({ value, onChange, disabled = false }: Directo
       const directoryOptions = await getDirectoryOptions();
       setOptions(directoryOptions);
 
-      // Always set default directory if value is empty or not in options
       if (directoryOptions.length > 0) {
         if (!value) {
           const defaultDir = await getDefaultDirectory();
           onChange(defaultDir);
         } else {
-          // Check if current value exists in options, if not, set to default
-          const valueExists = directoryOptions.some(opt => opt.path === value);
+          const valueExists = directoryOptions.some(
+            (opt) => opt.path === value,
+          );
           if (!valueExists) {
             const defaultDir = await getDefaultDirectory();
             onChange(defaultDir);
           }
         }
       }
-    } catch (err: any) {
-      setError('Failed to load directories');
-      console.error('Error loading directories:', err);
+    } catch (err: unknown) {
+      setError("Failed to load directories");
+      console.error("Error loading directories:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleChange = (e: Event) => {
-    const target = e.target as HTMLSelectElement;
-    onChange(target.value);
+  const handleChange = (e: SelectChangeEvent<string>) => {
+    onChange(e.target.value);
   };
 
-  const handleRetry = () => {
-    loadDirectories();
-  };
-
+  // Loading state
   if (isLoading) {
     return (
-      <div class="directory-selector">
-        <div class="selector-loading">
-          <span class="spinner small" />
-          <span>Loading...</span>
-        </div>
-      </div>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1 }}>
+        <CircularProgress size={18} />
+        <Typography variant="body2" color="text.secondary">
+          Loading directories...
+        </Typography>
+      </Box>
     );
   }
 
+  // Error state
   if (error) {
     return (
-      <div class="directory-selector">
-        <div class="selector-error">
-          <span class="error-icon">⚠️</span>
-          <span class="error-text">{error}</span>
-          <button class="retry-btn" onClick={handleRetry}>
+      <Alert
+        severity="error"
+        action={
+          <Button color="inherit" size="small" onClick={loadDirectories}>
             Retry
-          </button>
-        </div>
-      </div>
+          </Button>
+        }
+      >
+        <AlertTitle>Error</AlertTitle>
+        {error}
+      </Alert>
     );
   }
 
+  // Empty state
   if (options.length === 0) {
     return (
-      <div class="directory-selector">
-        <div class="selector-empty">
-          <span>No accessible directories found</span>
-        </div>
-      </div>
+      <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
+        No accessible directories found
+      </Typography>
     );
   }
 
+  // Normal state — dropdown
   return (
-    <div class="directory-selector">
-      <select
-        class="selector-input"
-        value={value || options[0]?.path || ''}
+    <FormControl fullWidth size="small" disabled={disabled}>
+      <InputLabel id="directory-select-label">Directory</InputLabel>
+      <Select
+        labelId="directory-select-label"
+        value={value || options[0]?.path || ""}
+        label="Directory"
         onChange={handleChange}
-        disabled={disabled}
       >
-        {options.map((option: DirectoryInfo) => (
-          <option key={option.path} value={option.path}>
+        {options.map((option) => (
+          <MenuItem key={option.path} value={option.path}>
             {option.name}
-          </option>
+          </MenuItem>
         ))}
-      </select>
-    </div>
+      </Select>
+    </FormControl>
   );
 }

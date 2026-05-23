@@ -1,5 +1,17 @@
-import { ServerInfo } from '../types';
+import {
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  IconButton,
+  Stack,
+} from "@mui/material";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import CheckIcon from "@mui/icons-material/Check";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import type { ServerInfo } from "../types";
+import type { SelectChangeEvent } from "@mui/material";
 
 interface ServerStatusProps {
   isRunning: boolean;
@@ -11,8 +23,8 @@ interface ServerStatusProps {
 }
 
 /**
- * ServerStatus component for displaying server information
- * Shows IP:port selector with copy and open buttons in a single line
+ * ServerStatus — displays the selected IP:port with copy and open-in-browser
+ * action buttons in a single compact row.
  */
 export function ServerStatus({
   isRunning,
@@ -20,7 +32,7 @@ export function ServerStatus({
   selectedIp,
   onIpChange,
   onCopyUrl,
-  copied
+  copied,
 }: ServerStatusProps) {
   if (!isRunning || !serverInfo) {
     return null;
@@ -33,34 +45,48 @@ export function ServerStatus({
   };
 
   return (
-    <div class="server-status">
-      <div class="ip-selector">
-        <select
-          class="ip-select"
+    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+      <FormControl fullWidth size="small">
+        <InputLabel id="ip-select-label">Server Address</InputLabel>
+        <Select
+          labelId="ip-select-label"
           value={selectedIp}
-          onChange={(e) => onIpChange(e.currentTarget.value)}
+          label="Server Address"
+          onChange={(e: SelectChangeEvent<string>) =>
+            onIpChange(e.target.value)
+          }
         >
           {serverInfo.ips.map((ip) => (
-            <option key={ip} value={ip}>
+            <MenuItem key={ip} value={ip}>
               {ip}:{serverInfo.port}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-        <button
-          class={`copy-btn ${copied ? 'copied' : ''}`}
-          onClick={onCopyUrl}
-          title={copied ? 'Copied!' : 'Copy URL'}
-        >
-          {copied ? '✓' : '📋'}
-        </button>
-        <button
-          class="open-btn"
-          onClick={handleOpenUrl}
-          title="Open in browser"
-        >
-          🔗
-        </button>
-      </div>
-    </div>
+        </Select>
+      </FormControl>
+
+      <IconButton
+        onClick={onCopyUrl}
+        color={copied ? "success" : "default"}
+        title={copied ? "Copied!" : "Copy URL"}
+        size="small"
+        sx={{ border: 1, borderColor: "divider" }}
+      >
+        {copied ? (
+          <CheckIcon fontSize="small" />
+        ) : (
+          <ContentCopyIcon fontSize="small" />
+        )}
+      </IconButton>
+
+      <IconButton
+        onClick={handleOpenUrl}
+        color="primary"
+        title="Open in browser"
+        size="small"
+        sx={{ border: 1, borderColor: "divider" }}
+      >
+        <OpenInNewIcon fontSize="small" />
+      </IconButton>
+    </Stack>
   );
 }
