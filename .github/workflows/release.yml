@@ -107,14 +107,14 @@ jobs:
         run: |
           pnpm install
 
-      - name: tauri android init
-        if: matrix.mobile == 'android'
-        run: |
-          pnpm tauri android init
-      - name: diff
-        if: matrix.mobile == 'android'
-        run: |
-          git diff
+      # - name: tauri android init
+      #   if: matrix.mobile == 'android'
+      #   run: |
+      #     pnpm tauri android init
+      # - name: diff
+      #   if: matrix.mobile == 'android'
+      #   run: |
+      #     git diff
       - name: setup Android signing
         if: matrix.mobile == 'android'
         run: |
