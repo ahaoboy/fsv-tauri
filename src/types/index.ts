@@ -8,7 +8,6 @@ export interface ServerInfo {
 export interface DirectoryInfo {
   name: string;
   path: string;
-  icon: string;
 }
 
 export interface FileInfo {
