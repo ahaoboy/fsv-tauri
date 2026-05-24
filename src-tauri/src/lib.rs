@@ -2,7 +2,7 @@
 // Module declarations
 // ---------------------------------------------------------------------------
 
-mod android_permission;
+mod android;
 mod directories;
 mod server;
 
@@ -24,7 +24,7 @@ pub struct ServerInfo {
 // Re-export all Tauri commands so the handler macro can see them
 // ---------------------------------------------------------------------------
 
-use android_permission::request_storage_permission;
+use android::request_storage_permission;
 use directories::{get_available_directories, list_directory_files};
 use server::{get_server_status, send_message, start_server, stop_server, ServerState};
 
@@ -34,13 +34,13 @@ use server::{get_server_status, send_message, start_server, stop_server, ServerS
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mut builder = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_fs::init())
         .manage(ServerState {
-            handle: std::sync::Mutex::new(None),
+            server: std::sync::Mutex::new(None),
             info: std::sync::Mutex::new(None),
         })
         .invoke_handler(tauri::generate_handler![
@@ -53,20 +53,12 @@ pub fn run() {
             request_storage_permission,
         ]);
 
-    #[cfg(target_os = "android")]
-    {
-        builder = builder.plugin(tauri_plugin_android_fs::init());
-    }
-
     #[cfg(target_os = "windows")]
-    {
-        builder = builder
-            .plugin(tauri_plugin_updater::Builder::new().build())
-            .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}));
-    }
+    let builder = builder
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}));
 
     builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-

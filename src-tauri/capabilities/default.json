@@ -28,8 +28,9 @@
     {
       "identifier": "fs:scope",
       "allow": [
-        { "path": "$HOME/**/*" },
-        { "path": "/storage/emulated/0/**/*" }
+        {
+          "path": "**/*"
+        }
       ]
     }
   ]

@@ -5,7 +5,7 @@ use super::ServerInfo;
 
 /// Holds the running server's handle so it stays alive and can be stopped.
 pub struct ServerState {
-    pub handle: Mutex<Option<fsv::ServerHandle>>,
+    pub server: Mutex<Option<fsv::Server>>,
     pub info: Mutex<Option<ServerInfo>>,
 }
 
@@ -19,7 +19,7 @@ pub async fn start_server(
 ) -> Result<ServerInfo, String> {
     // Check if server is already running
     {
-        let handle = state.handle.lock().map_err(|e| e.to_string())?;
+        let handle = state.server.lock().map_err(|e| e.to_string())?;
         if handle.is_some() {
             let info = state.info.lock().map_err(|e| e.to_string())?;
             if let Some(ref info) = *info {
@@ -28,7 +28,7 @@ pub async fn start_server(
         }
     }
 
-    let (ips, actual_port, join_handle) = fsv::run(fsv::Config {
+    let server = fsv::run(fsv::Config {
         port,
         path: path.into(),
     })
@@ -36,13 +36,13 @@ pub async fn start_server(
     .map_err(|e| format!("Failed to start server: {}", e))?;
 
     let info = ServerInfo {
-        ips,
-        port: actual_port,
+        ips: server.ips.clone(),
+        port: server.port,
     };
 
     {
-        let mut handle = state.handle.lock().map_err(|e| e.to_string())?;
-        *handle = Some(join_handle);
+        let mut handle = state.server.lock().map_err(|e| e.to_string())?;
+        *handle = Some(server);
     }
     {
         let mut stored_info = state.info.lock().map_err(|e| e.to_string())?;
@@ -55,7 +55,7 @@ pub async fn start_server(
 /// Stop the running file server.
 #[tauri::command]
 pub async fn stop_server(state: State<'_, ServerState>) -> Result<(), String> {
-    let mut handle = state.handle.lock().map_err(|e| e.to_string())?;
+    let mut handle = state.server.lock().map_err(|e| e.to_string())?;
     if let Some(mut h) = handle.take() {
         let _ = h.shutdown();
     }
@@ -70,15 +70,14 @@ pub async fn send_message(
     state: State<'_, ServerState>,
     message: String,
 ) -> Result<(), String> {
-    let mut handle = state.handle.lock().map_err(|e| e.to_string())?;
-
-    if let Some(h) = handle.take() {
-        println!("Message received: {}", message);
-        let _ = h.send(&message);
-        *handle = Some(h);
-        Ok(())
-    } else {
-        Err("Server is not running".to_string())
+    let handle = state.server.lock().map_err(|e| e.to_string())?;
+    match &*handle {
+        Some(server) => {
+            println!("Message received: {}", message);
+            let _ = server.send(&message);
+            Ok(())
+        }
+        None => Err("Server is not running".to_string()),
     }
 }
 

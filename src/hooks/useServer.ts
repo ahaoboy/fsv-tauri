@@ -88,7 +88,7 @@ export function useServer() {
     return () => clearInterval(interval);
   }, [isRunning, serverUrl]);
 
-  /** Request storage permission on Android */
+  /** Request storage permission on Android via Rust JNI bridge */
   const requestStoragePermission = useCallback(async () => {
     try {
       const granted = await invoke<boolean>("request_storage_permission");
@@ -98,6 +98,7 @@ export function useServer() {
       }
     } catch (err) {
       console.error("Failed to request storage permission:", err);
+      // Non-Android platforms: silently ok
     }
   }, []);
 
