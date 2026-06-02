@@ -2,9 +2,11 @@
 name = "fsv-tauri"
 version = "0.1.0"
 description = "A Tauri App"
-authors = ["you"]
-edition = "2021"
-
+authors = ["ahaoboy"]
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/ahaoboy/fsv-tauri"
+homepage = "https://github.com/ahaoboy/fsv-tauri"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
