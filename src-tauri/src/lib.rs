@@ -42,6 +42,7 @@ pub fn run() {
         .manage(ServerState {
             server: std::sync::Mutex::new(None),
             info: std::sync::Mutex::new(None),
+            shutting_down: std::sync::atomic::AtomicBool::new(false),
         })
         .invoke_handler(tauri::generate_handler![
             start_server,

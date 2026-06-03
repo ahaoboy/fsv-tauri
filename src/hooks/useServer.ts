@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { getWsInfo } from "../utils/api";
 import type { ServerInfo } from "../types";
 
@@ -55,6 +56,24 @@ export function useServer() {
     checkServerStatus();
     requestStoragePermission();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Listen for backend-pushed server-stopped events
+  // (e.g. server crashed, port stolen, or stopped from backend)
+  useEffect(() => {
+    let unlistenFn: (() => void) | undefined;
+
+    listen("server-stopped", () => {
+      setServerInfo(null);
+      setSelectedIp("");
+      setWsConnected(0);
+    }).then((fn) => {
+      unlistenFn = fn;
+    });
+
+    return () => {
+      unlistenFn?.();
+    };
   }, []);
 
   // Default to first IP when server info changes
