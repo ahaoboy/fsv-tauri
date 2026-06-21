@@ -5,7 +5,6 @@ import {
   InputAdornment,
   CircularProgress,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
   Alert,
@@ -50,7 +49,6 @@ export function DirectorySelector({
     <TextField
       fullWidth
       size="small"
-      label="Directory"
       value={value || ""}
       disabled={disabled}
       slotProps={{
@@ -160,12 +158,17 @@ function MobileDirectorySelector({
 
   return (
     <FormControl fullWidth size="small" disabled={disabled}>
-      <InputLabel id="directory-select-label">Directory</InputLabel>
       <Select
-        labelId="directory-select-label"
         value={value || options[0]?.path || ""}
-        label="Directory"
         onChange={handleChange}
+        renderValue={(selected) => {
+          const opt = options.find((o) => o.path === selected);
+          return (
+            <Typography noWrap variant="body2">
+              {opt?.name ?? selected}
+            </Typography>
+          );
+        }}
       >
         {options.map((option) => (
           <MenuItem key={option.path} value={option.path}>

@@ -16,6 +16,7 @@ import StopIcon from "@mui/icons-material/Stop";
 import FolderIcon from "@mui/icons-material/Folder";
 import { open } from "@tauri-apps/plugin-dialog";
 import { platform } from "@tauri-apps/plugin-os";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 import { DirectorySelector } from "./components/DirectorySelector";
 import { ServerStatus } from "./components/ServerStatus";
@@ -212,6 +213,35 @@ function App() {
             {error && <Alert severity="error">{error}</Alert>}
           </Stack>
         </Paper>
+
+        {/* ---- Logo (shown when server is stopped) ---- */}
+        {!isRunning && (
+          <Box
+            onClick={() => openUrl("https://github.com/ahaoboy/fsv-tauri")}
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              flex: 1,
+              cursor: "pointer",
+              opacity: 0.7,
+              transition: "opacity 0.2s",
+              "&:hover": { opacity: 1 },
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            <Box
+              component="img"
+              src="/icon.png"
+              alt="FSV"
+              sx={{
+                width: "80%",
+                height: "auto",
+                borderRadius: "20%",
+              }}
+            />
+          </Box>
+        )}
 
         {/* ---- Server Status Card ---- */}
         {isRunning && serverInfo && (

@@ -13,6 +13,19 @@ real-time WebSocket broadcasting — all from a compact mobile-first UI.
 Built with [Tauri 2](https://tauri.app/), [React 19](https://react.dev/), and
 [Material UI 9](https://mui.com/).
 
+## Download
+
+[![Latest Release](https://img.shields.io/github/v/release/ahaoboy/fsv-tauri?label=Latest&logo=github)](https://github.com/ahaoboy/fsv-tauri/releases/latest)
+
+Download the latest version from the [Releases page](https://github.com/ahaoboy/fsv-tauri/releases/latest).
+
+| Platform | Formats                                        |
+| -------- | ---------------------------------------------- |
+| Windows  | `.msi` · `.exe` setup · portable `.exe`        |
+| macOS    | `.dmg` · `.app.tar.gz` (Apple Silicon / Intel) |
+| Linux    | `.deb` · `.rpm` · `.AppImage` · raw binary     |
+| Android  | `.apk` · `.aab`                                |
+
 ## Features
 
 - **One-tap server** — pick a directory, set a port, start serving files instantly
