@@ -18,23 +18,23 @@ function getDesignTokens(mode: PaletteMode) {
       mode,
       ...(mode === "light"
         ? {
-          primary: { main: "#3b82f6", dark: "#1d4ed8" },
-          secondary: { main: "#10b981" },
-          error: { main: "#ef4444" },
-          warning: { main: "#f59e0b" },
-          background: { default: "#f9fafb", paper: "#ffffff" },
-          text: { primary: "#1f2937", secondary: "#6b7280" },
-          divider: "#e5e7eb",
-        }
+            primary: { main: "#3b82f6", dark: "#1d4ed8" },
+            secondary: { main: "#10b981" },
+            error: { main: "#ef4444" },
+            warning: { main: "#f59e0b" },
+            background: { default: "#f9fafb", paper: "#ffffff" },
+            text: { primary: "#1f2937", secondary: "#6b7280" },
+            divider: "#e5e7eb",
+          }
         : {
-          primary: { main: "#60a5fa", dark: "#3b82f6" },
-          secondary: { main: "#34d399" },
-          error: { main: "#f87171" },
-          warning: { main: "#fbbf24" },
-          background: { default: "#111827", paper: "#1f2937" },
-          text: { primary: "#f9fafb", secondary: "#9ca3af" },
-          divider: "#374151",
-        }),
+            primary: { main: "#60a5fa", dark: "#3b82f6" },
+            secondary: { main: "#34d399" },
+            error: { main: "#f87171" },
+            warning: { main: "#fbbf24" },
+            background: { default: "#111827", paper: "#1f2937" },
+            text: { primary: "#f9fafb", secondary: "#9ca3af" },
+            divider: "#374151",
+          }),
     },
     typography: {
       fontFamily: [

@@ -65,22 +65,37 @@ fn request_all_files_permission(app: &tauri::AppHandle) -> Result<(), String> {
 #[cfg(target_os = "android")]
 #[tauri::command]
 pub async fn request_storage_permission(app: tauri::AppHandle) -> Result<bool, String> {
+    tracing::info!("request_storage_permission called");
+
     match has_all_files_permission(&app) {
-        Ok(true) => return Ok(true),
+        Ok(true) => {
+            tracing::info!("Storage permission already granted");
+            return Ok(true);
+        }
         Ok(false) => {
+            tracing::info!("Storage permission not granted, requesting...");
             request_all_files_permission(&app)?;
 
             // Poll until the user returns from settings and grants permission
             loop {
                 tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                 match has_all_files_permission(&app) {
-                    Ok(true) => return Ok(true),
-                    Err(e) => return Err(e),
+                    Ok(true) => {
+                        tracing::info!("Storage permission granted after request");
+                        return Ok(true);
+                    }
+                    Err(e) => {
+                        tracing::error!(error = %e, "Permission check failed during poll");
+                        return Err(e);
+                    }
                     _ => continue,
                 }
             }
         }
-        Err(e) => Err(e),
+        Err(e) => {
+            tracing::error!(error = %e, "has_all_files_permission failed");
+            Err(e)
+        }
     }
 }
 
@@ -90,4 +105,3 @@ pub async fn request_storage_permission(app: tauri::AppHandle) -> Result<bool, S
 pub async fn request_storage_permission(_app: tauri::AppHandle) -> Result<bool, String> {
     Ok(true)
 }
-

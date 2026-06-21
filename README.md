@@ -15,26 +15,25 @@ Built with [Tauri 2](https://tauri.app/), [React 19](https://react.dev/), and
 
 ## Features
 
--   **One-tap server** — pick a directory, set a port, start serving files instantly
--   **Real-time broadcasting** — push messages to all connected web clients via WebSocket
--   **QR code sharing** — generate a QR code so mobile clients can scan and connect
--   **Auto-open browser** — opens the web UI in your default browser on start
--   **Hash-route URLs** — shareable URLs like `http://host:port/#/path/to/folder`
--   **File preview** — built-in preview for text, images, video, and audio files
--   **Cross-platform** — runs on Windows, macOS, Linux desktop and Android
--   **Dark / light theme** — automatically follows your system preference via MUI
--   **Mobile-first UI** — responsive layout with Material UI, zero custom CSS
+- **One-tap server** — pick a directory, set a port, start serving files instantly
+- **Real-time broadcasting** — push messages to all connected web clients via WebSocket
+- **QR code sharing** — generate a QR code so mobile clients can scan and connect
+- **Auto-open browser** — opens the web UI in your default browser on start
+- **Hash-route URLs** — shareable URLs like `http://host:port/#/path/to/folder`
+- **File preview** — built-in preview for text, images, video, and audio files
+- **Cross-platform** — runs on Windows, macOS, Linux desktop and Android
+- **Dark / light theme** — automatically follows your system preference via MUI
+- **Mobile-first UI** — responsive layout with Material UI, zero custom CSS
 
 ## Tech Stack
 
-| Layer        | Technology                                                  |
-| ------------ | ----------------------------------------------------------- |
-| Core library | [fsv](https://github.com/ahaoboy/fsv) (Rust)                |
-| Desktop GUI  | Tauri 2 (Rust) + React 19 + MUI 9 + TypeScript              |
-| Build tool   | Vite 8                                                      |
-| QR code      | [node-qrcode](https://www.npmjs.com/package/qrcode)         |
+| Layer        | Technology                                          |
+| ------------ | --------------------------------------------------- |
+| Core library | [fsv](https://github.com/ahaoboy/fsv) (Rust)        |
+| Desktop GUI  | Tauri 2 (Rust) + React 19 + MUI 9 + TypeScript      |
+| Build tool   | Vite 8                                              |
+| QR code      | [node-qrcode](https://www.npmjs.com/package/qrcode) |
 
 ## License
 
 [MIT](https://github.com/ahaoboy/fsv/blob/main/LICENSE)
-

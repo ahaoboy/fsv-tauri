@@ -1,16 +1,20 @@
 import { useState, useEffect } from "react";
 import {
+  TextField,
+  IconButton,
+  InputAdornment,
+  CircularProgress,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  CircularProgress,
   Alert,
   AlertTitle,
   Button,
   Typography,
   Box,
 } from "@mui/material";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import { getDirectoryOptions, getDefaultDirectory } from "../utils/directories";
 import type { DirectoryInfo } from "../types";
 import type { SelectChangeEvent } from "@mui/material";
@@ -19,22 +23,70 @@ interface DirectorySelectorProps {
   value: string;
   onChange: (path: string) => void;
   disabled?: boolean;
+  /** Desktop only: triggers native folder picker */
+  onBrowse?: () => void;
+  isBrowsing?: boolean;
+  /** 'desktop' = native dialog with browse icon; 'mobile' = dropdown */
+  mode?: "desktop" | "mobile";
 }
 
 /**
- * DirectorySelector — renders a dropdown of available directories
- * provided by the Tauri backend. Handles loading, error, and empty states.
+ * DirectorySelector — adapts between desktop (native folder picker)
+ * and mobile (backend directory dropdown).
  */
 export function DirectorySelector({
   value,
   onChange,
   disabled = false,
+  onBrowse,
+  isBrowsing = false,
+  mode = "desktop",
 }: DirectorySelectorProps) {
+  if (mode === "mobile") {
+    return <MobileDirectorySelector value={value} onChange={onChange} disabled={disabled} />;
+  }
+
+  return (
+    <TextField
+      fullWidth
+      size="small"
+      label="Directory"
+      value={value || ""}
+      disabled={disabled}
+      slotProps={{
+        input: {
+          readOnly: true,
+          endAdornment: onBrowse ? (
+            <InputAdornment position="end">
+              <IconButton
+                onClick={onBrowse}
+                disabled={disabled || isBrowsing}
+                size="small"
+                edge="end"
+              >
+                {isBrowsing ? <CircularProgress size={20} /> : <FolderOpenIcon />}
+              </IconButton>
+            </InputAdornment>
+          ) : undefined,
+        },
+      }}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Mobile variant — dropdown backed by Tauri backend directory list
+// ---------------------------------------------------------------------------
+
+function MobileDirectorySelector({
+  value,
+  onChange,
+  disabled = false,
+}: Omit<DirectorySelectorProps, "onBrowse" | "isBrowsing" | "mode">) {
   const [options, setOptions] = useState<DirectoryInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load directories on mount
   useEffect(() => {
     loadDirectories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -43,7 +95,6 @@ export function DirectorySelector({
   const loadDirectories = async () => {
     setIsLoading(true);
     setError(null);
-
     try {
       const directoryOptions = await getDirectoryOptions();
       setOptions(directoryOptions);
@@ -53,9 +104,7 @@ export function DirectorySelector({
           const defaultDir = await getDefaultDirectory();
           onChange(defaultDir);
         } else {
-          const valueExists = directoryOptions.some(
-            (opt) => opt.path === value,
-          );
+          const valueExists = directoryOptions.some((opt) => opt.path === value);
           if (!valueExists) {
             const defaultDir = await getDefaultDirectory();
             onChange(defaultDir);
@@ -74,7 +123,6 @@ export function DirectorySelector({
     onChange(e.target.value);
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1 }}>
@@ -86,7 +134,6 @@ export function DirectorySelector({
     );
   }
 
-  // Error state
   if (error) {
     return (
       <Alert
@@ -103,7 +150,6 @@ export function DirectorySelector({
     );
   }
 
-  // Empty state
   if (options.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
@@ -112,7 +158,6 @@ export function DirectorySelector({
     );
   }
 
-  // Normal state — dropdown
   return (
     <FormControl fullWidth size="small" disabled={disabled}>
       <InputLabel id="directory-select-label">Directory</InputLabel>
@@ -124,7 +169,17 @@ export function DirectorySelector({
       >
         {options.map((option) => (
           <MenuItem key={option.path} value={option.path}>
-            {option.name}
+            <Typography noWrap sx={{ maxWidth: "60%" }}>
+              {option.name}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              noWrap
+              sx={{ flex: 1, ml: 1, minWidth: 0 }}
+            >
+              {option.path}
+            </Typography>
           </MenuItem>
         ))}
       </Select>

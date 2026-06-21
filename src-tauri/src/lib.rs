@@ -26,7 +26,7 @@ pub struct ServerInfo {
 
 use android::request_storage_permission;
 use directories::{get_available_directories, list_directory_files};
-use server::{get_server_status, send_message, start_server, stop_server, ServerState};
+use server::{ServerState, get_server_status, send_message, start_server, stop_server};
 
 // ---------------------------------------------------------------------------
 // Application entry point
@@ -34,8 +34,24 @@ use server::{get_server_status, send_message, start_server, stop_server, ServerS
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Initialize tracing subscriber controlled by RUST_LOG env var.
+    // Defaults to `info` if not set. Use e.g. RUST_LOG=debug for verbose output.
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+        )
+        .with_target(false)
+        .init();
+
+    // Bridge log crate events (from Tauri internals & dependencies) into tracing.
+    tracing_log::LogTracer::init().ok();
+
+    tracing::info!("FSV Tauri application starting");
+
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_fs::init())

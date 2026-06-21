@@ -1,5 +1,5 @@
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager, State};
 
 use super::ServerInfo;
@@ -22,12 +22,15 @@ pub async fn start_server(
     port: u16,
     state: State<'_, ServerState>,
 ) -> Result<ServerInfo, String> {
+    tracing::info!(%path, %port, "start_server requested");
+
     // Check if server is already running
     {
         let handle = state.server.lock().map_err(|e| e.to_string())?;
         if handle.is_some() {
             let info = state.info.lock().map_err(|e| e.to_string())?;
             if let Some(ref info) = *info {
+                tracing::info!("Server already running on port {}", info.port);
                 return Ok(info.clone());
             }
         }
@@ -38,15 +41,24 @@ pub async fn start_server(
 
     let server = fsv::run(fsv::Config {
         port,
-        path: path.into(),
+        path: path.clone().into(),
     })
     .await
-    .map_err(|e| format!("Failed to start server: {}", e))?;
+    .map_err(|e| {
+        tracing::error!(%path, %port, error = %e, "Failed to start server");
+        format!("Failed to start server: {}", e)
+    })?;
 
     let info = ServerInfo {
         ips: server.ips.clone(),
         port: server.port,
     };
+
+    tracing::info!(
+        port = info.port,
+        ips = ?info.ips,
+        "Server started successfully"
+    );
 
     // Clone the shutdown notifier before storing the server handle.
     // When the server process exits (crash, port conflict, etc.) the
@@ -64,14 +76,21 @@ pub async fn start_server(
 
     // Background watcher: if the server shuts down on its own,
     // clear Tauri state and tell the frontend.
+    let watcher_port = info.port;
     tokio::spawn(async move {
         shutdown_notify.notified().await;
+
+        tracing::warn!(
+            port = watcher_port,
+            "Server shutdown detected (unexpected or external)"
+        );
 
         let state = app.state::<ServerState>();
 
         // If stop_server() set this flag, it already handled cleanup
         // and will return the invoke callback — don't race with it.
         if state.shutting_down.swap(false, Ordering::SeqCst) {
+            tracing::debug!("Shutdown already handled by stop_server, skipping watcher cleanup");
             return;
         }
 
@@ -95,34 +114,40 @@ pub async fn stop_server(
     app: tauri::AppHandle,
     state: State<'_, ServerState>,
 ) -> Result<(), String> {
+    tracing::info!("stop_server requested");
+
     // Signal the background watcher that *we* are handling the shutdown.
     state.shutting_down.store(true, Ordering::SeqCst);
 
     let mut handle = state.server.lock().map_err(|e| e.to_string())?;
     if let Some(mut h) = handle.take() {
+        tracing::info!("Shutting down server");
         let _ = h.shutdown();
+    } else {
+        tracing::debug!("stop_server called but no server was running");
     }
     let mut info = state.info.lock().map_err(|e| e.to_string())?;
     *info = None;
 
     let _ = app.emit("server-stopped", ());
+    tracing::info!("Server stopped and frontend notified");
     Ok(())
 }
 
 /// Send a broadcast message to all connected WebSocket clients.
 #[tauri::command]
-pub async fn send_message(
-    state: State<'_, ServerState>,
-    message: String,
-) -> Result<(), String> {
+pub async fn send_message(state: State<'_, ServerState>, message: String) -> Result<(), String> {
     let handle = state.server.lock().map_err(|e| e.to_string())?;
     match &*handle {
         Some(server) => {
-            println!("Message received: {}", message);
+            tracing::debug!(len = message.len(), "Broadcasting message to clients");
             let _ = server.send(&message);
             Ok(())
         }
-        None => Err("Server is not running".to_string()),
+        None => {
+            tracing::warn!("send_message called but no server is running");
+            Err("Server is not running".to_string())
+        }
     }
 }
 

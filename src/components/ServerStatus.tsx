@@ -1,11 +1,4 @@
-import {
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  IconButton,
-  Stack,
-} from "@mui/material";
+import { FormControl, InputLabel, Select, MenuItem, IconButton, Stack } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
@@ -52,9 +45,7 @@ export function ServerStatus({
           labelId="ip-select-label"
           value={selectedIp}
           label="Server Address"
-          onChange={(e: SelectChangeEvent<string>) =>
-            onIpChange(e.target.value)
-          }
+          onChange={(e: SelectChangeEvent<string>) => onIpChange(e.target.value)}
         >
           {serverInfo.ips.map((ip) => (
             <MenuItem key={ip} value={ip}>
@@ -71,11 +62,7 @@ export function ServerStatus({
         size="small"
         sx={{ border: 1, borderColor: "divider" }}
       >
-        {copied ? (
-          <CheckIcon fontSize="small" />
-        ) : (
-          <ContentCopyIcon fontSize="small" />
-        )}
+        {copied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
       </IconButton>
 
       <IconButton

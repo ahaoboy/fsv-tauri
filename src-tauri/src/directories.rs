@@ -41,11 +41,7 @@ fn is_valid_directory(path: &Path) -> bool {
 
 /// Try to add a directory entry if it's valid and its name isn't already present.
 /// Returns `true` when the entry was added.
-fn try_add_directory(
-    directories: &mut Vec<DirectoryInfo>,
-    path: PathBuf,
-    name: &str,
-) -> bool {
+fn try_add_directory(directories: &mut Vec<DirectoryInfo>, path: PathBuf, name: &str) -> bool {
     if directories.iter().any(|d| d.name == name) {
         return false;
     }
@@ -69,6 +65,8 @@ fn try_add_directory(
 pub async fn get_available_directories(
     app: tauri::AppHandle,
 ) -> Result<Vec<DirectoryInfo>, String> {
+    tracing::debug!("get_available_directories called");
+
     let path_resolver = app.path();
     let mut directories = Vec::new();
 
@@ -97,11 +95,7 @@ pub async fn get_available_directories(
                     try_add_directory(&mut directories, path.join("Music"), "Music");
                     try_add_directory(&mut directories, path.join("Movies"), "Videos");
                     try_add_directory(&mut directories, path.join("Podcasts"), "Podcasts");
-                    try_add_directory(
-                        &mut directories,
-                        path.join("Audiobooks"),
-                        "Audiobooks",
-                    );
+                    try_add_directory(&mut directories, path.join("Audiobooks"), "Audiobooks");
                     break;
                 }
             }
@@ -157,14 +151,16 @@ pub async fn get_available_directories(
     directories.dedup_by(|a, b| a.path == b.path);
     directories.sort_by(|a, b| a.name.cmp(&b.name));
 
+    tracing::debug!(
+        count = directories.len(),
+        "get_available_directories complete"
+    );
     Ok(directories)
 }
 
 /// List files and subdirectories inside a given directory.
 #[tauri::command]
-pub async fn list_directory_files(
-    directory_path: String,
-) -> Result<Vec<FileInfo>, String> {
+pub async fn list_directory_files(directory_path: String) -> Result<Vec<FileInfo>, String> {
     use std::fs;
     use std::time::UNIX_EPOCH;
 
@@ -177,8 +173,7 @@ pub async fn list_directory_files(
         return Err(format!("Path is not a directory: {}", directory_path));
     }
 
-    let entries =
-        fs::read_dir(path).map_err(|e| format!("Failed to read directory: {}", e))?;
+    let entries = fs::read_dir(path).map_err(|e| format!("Failed to read directory: {}", e))?;
 
     let mut files = Vec::new();
 

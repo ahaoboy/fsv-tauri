@@ -47,9 +47,7 @@ export function useServer() {
   const [wsConnected, setWsConnected] = useState<number>(0);
 
   const isRunning = serverInfo !== null;
-  const serverUrl = selectedIp
-    ? `http://${selectedIp}:${serverInfo?.port}`
-    : "";
+  const serverUrl = selectedIp ? `http://${selectedIp}:${serverInfo?.port}` : "";
 
   // Check server status on mount
   useEffect(() => {
@@ -150,9 +148,7 @@ export function useServer() {
       setServerInfo(info);
     } catch (err: unknown) {
       const message =
-        typeof err === "string"
-          ? err
-          : (err as Error).message || "Failed to start server";
+        typeof err === "string" ? err : (err as Error).message || "Failed to start server";
       setError(message);
     } finally {
       setIsLoading(false);
@@ -170,9 +166,7 @@ export function useServer() {
       setSelectedIp("");
     } catch (err: unknown) {
       const message =
-        typeof err === "string"
-          ? err
-          : (err as Error).message || "Failed to stop server";
+        typeof err === "string" ? err : (err as Error).message || "Failed to stop server";
       setError(message);
     } finally {
       setIsLoading(false);

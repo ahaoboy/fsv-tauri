@@ -1,11 +1,5 @@
 import { useState, type FormEvent } from "react";
-import {
-  TextField,
-  Button,
-  Alert,
-  CircularProgress,
-  Stack,
-} from "@mui/material";
+import { TextField, Button, Alert, CircularProgress, Stack } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import { invoke } from "@tauri-apps/api/core";
 
@@ -39,9 +33,7 @@ export function MessageInput({ onMessageSent }: MessageInputProps) {
       onMessageSent?.();
     } catch (err: unknown) {
       const msg =
-        typeof err === "string"
-          ? err
-          : (err as Error).message || "Failed to send message";
+        typeof err === "string" ? err : (err as Error).message || "Failed to send message";
       setError(msg);
     } finally {
       setIsSending(false);
@@ -50,12 +42,7 @@ export function MessageInput({ onMessageSent }: MessageInputProps) {
 
   return (
     <Stack spacing={1.5}>
-      <Stack
-        direction="row"
-        spacing={1}
-        component="form"
-        onSubmit={handleSubmit}
-      >
+      <Stack direction="row" spacing={1} component="form" onSubmit={handleSubmit}>
         <TextField
           fullWidth
           size="small"
@@ -69,13 +56,7 @@ export function MessageInput({ onMessageSent }: MessageInputProps) {
           type="submit"
           variant="contained"
           disabled={isSending || !message.trim()}
-          startIcon={
-            isSending ? (
-              <CircularProgress size={16} color="inherit" />
-            ) : (
-              <SendIcon />
-            )
-          }
+          startIcon={isSending ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
           sx={{ flexShrink: 0, minWidth: 100 }}
         >
           {isSending ? "Sending..." : "Send"}

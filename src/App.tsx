@@ -1,4 +1,5 @@
 import {
+  Box,
   Container,
   Paper,
   Stack,
@@ -7,19 +8,21 @@ import {
   Chip,
   Alert,
   CircularProgress,
-  Box,
   Divider,
   TextField,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
 import FolderIcon from "@mui/icons-material/Folder";
+import { open } from "@tauri-apps/plugin-dialog";
+import { platform } from "@tauri-apps/plugin-os";
 
 import { DirectorySelector } from "./components/DirectorySelector";
 import { ServerStatus } from "./components/ServerStatus";
 import { QRCode } from "./components/QRCode";
 import { MessageInput } from "./components/MessageInput";
 import { useServer } from "./hooks/useServer";
+import { useState, useCallback, useEffect } from "react";
 
 /**
  * App — root component for the FSV (File Server Viewer) application.
@@ -51,8 +54,63 @@ function App() {
     handleMessageSent,
   } = useServer();
 
+  // Browse folder dialog (desktop only)
+  const [isBrowsing, setIsBrowsing] = useState(false);
+  const [osPlatform, setOsPlatform] = useState<string>("unknown");
+  const isMobile = osPlatform === "android" || osPlatform === "ios";
+
+  // Detect platform on mount
+  useEffect(() => {
+    try {
+      setOsPlatform(platform());
+    } catch {
+      /* keep unknown */
+    }
+  }, []);
+
+  const handleBrowse = useCallback(async () => {
+    setIsBrowsing(true);
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: "Select a folder to serve",
+      });
+      if (selected && typeof selected === "string") {
+        setPath(selected);
+      }
+    } catch (err) {
+      console.error("Native folder picker failed:", err);
+    } finally {
+      setIsBrowsing(false);
+    }
+  }, [setPath]);
+
   // Extract the last segment of the path for display
   const folderName = path.split(/[\\/]/).filter(Boolean).pop() || path;
+
+  // Truncated path: cap folder name, trailing … if too long
+  const MAX_NAME_LEN = 16;
+  const truncatedName =
+    folderName.length > MAX_NAME_LEN ? folderName.slice(0, MAX_NAME_LEN) + "…" : folderName;
+
+  const pathLabel = truncatedName;
+
+  // Copy full path to clipboard
+  const handleCopyPath = useCallback(async () => {
+    if (!path) return;
+    try {
+      await navigator.clipboard.writeText(path);
+    } catch {
+      // Fallback
+      const textArea = document.createElement("textarea");
+      textArea.value = path;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+    }
+  }, [path]);
 
   return (
     <Container maxWidth="sm" sx={{ py: 2 }}>
@@ -66,27 +124,24 @@ function App() {
             gap: 1,
             px: 1.5,
             py: 0.75,
+            overflow: "hidden",
           }}
         >
           <FolderIcon fontSize="small" color="action" />
           <Typography
-            variant="body2"
-            noWrap
-            sx={{ fontWeight: 600, flexShrink: 0, maxWidth: "40%" }}
-          >
-            {folderName}
-          </Typography>
-          <Typography
             variant="caption"
-            color="text.secondary"
             noWrap
+            onClick={handleCopyPath}
+            title={`Click to copy:\n${path}`}
             sx={{
               flex: 1,
               minWidth: 0,
               fontFamily: "monospace",
+              cursor: "pointer",
+              "&:hover": { color: "primary.main" },
             }}
           >
-            {path}
+            {pathLabel}
           </Typography>
           {isRunning && wsConnected !== undefined && (
             <Chip
@@ -103,15 +158,18 @@ function App() {
         {/* ---- Server Control Card ---- */}
         <Paper variant="outlined" sx={{ p: 2 }}>
           <Stack spacing={1.5}>
-            {/* Directory + Port in one row */}
-            <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <DirectorySelector
-                  value={path}
-                  onChange={setPath}
-                  disabled={isRunning || isLoading}
-                />
-              </Box>
+            {/* Directory — full width, browse icon inside */}
+            <DirectorySelector
+              value={path}
+              onChange={setPath}
+              disabled={isRunning || isLoading}
+              mode={isMobile ? "mobile" : "desktop"}
+              onBrowse={isMobile ? undefined : handleBrowse}
+              isBrowsing={isBrowsing}
+            />
+
+            {/* Port + Start/Stop in one row */}
+            <Stack direction="row" spacing={1}>
               <TextField
                 type="number"
                 size="small"
@@ -122,35 +180,33 @@ function App() {
                 slotProps={{
                   htmlInput: { min: 1, max: 65535 },
                 }}
-                sx={{ width: 100, flexShrink: 0 }}
+                sx={{ width: 96, flexShrink: 0 }}
               />
+              <Button
+                fullWidth
+                variant="contained"
+                color={isRunning ? "error" : "primary"}
+                onClick={isRunning ? handleStop : handleStart}
+                disabled={isLoading}
+                startIcon={
+                  isLoading ? (
+                    <CircularProgress size={18} color="inherit" />
+                  ) : isRunning ? (
+                    <StopIcon />
+                  ) : (
+                    <PlayArrowIcon />
+                  )
+                }
+              >
+                {isLoading
+                  ? isRunning
+                    ? "Stopping..."
+                    : "Starting..."
+                  : isRunning
+                    ? "Stop Server"
+                    : "Start Server"}
+              </Button>
             </Stack>
-
-            {/* Start / Stop Button */}
-            <Button
-              fullWidth
-              variant="contained"
-              color={isRunning ? "error" : "primary"}
-              onClick={isRunning ? handleStop : handleStart}
-              disabled={isLoading}
-              startIcon={
-                isLoading ? (
-                  <CircularProgress size={18} color="inherit" />
-                ) : isRunning ? (
-                  <StopIcon />
-                ) : (
-                  <PlayArrowIcon />
-                )
-              }
-            >
-              {isLoading
-                ? isRunning
-                  ? "Stopping..."
-                  : "Starting..."
-                : isRunning
-                  ? "Stop Server"
-                  : "Start Server"}
-            </Button>
 
             {/* Error Alert */}
             {error && <Alert severity="error">{error}</Alert>}
