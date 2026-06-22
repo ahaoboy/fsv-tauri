@@ -16,7 +16,7 @@ import StopIcon from "@mui/icons-material/Stop";
 import FolderIcon from "@mui/icons-material/Folder";
 import { open } from "@tauri-apps/plugin-dialog";
 import { platform } from "@tauri-apps/plugin-os";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 
 import { DirectorySelector } from "./components/DirectorySelector";
 import { ServerStatus } from "./components/ServerStatus";
@@ -87,31 +87,31 @@ function App() {
     }
   }, [setPath]);
 
-  // Extract the last segment of the path for display
-  const folderName = path.split(/[\\/]/).filter(Boolean).pop() || path;
+  // Full path for info bar (CSS noWrap handles overflow)
+  const pathLabel = path;
 
-  // Truncated path: cap folder name, trailing … if too long
-  const MAX_NAME_LEN = 16;
-  const truncatedName =
-    folderName.length > MAX_NAME_LEN ? folderName.slice(0, MAX_NAME_LEN) + "…" : folderName;
-
-  const pathLabel = truncatedName;
-
-  // Copy full path to clipboard
-  const handleCopyPath = useCallback(async () => {
+  // Click path: desktop opens in file explorer, mobile copies to clipboard
+  const handleClickPath = useCallback(async () => {
     if (!path) return;
-    try {
-      await navigator.clipboard.writeText(path);
-    } catch {
-      // Fallback
-      const textArea = document.createElement("textarea");
-      textArea.value = path;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
+    if (isMobile) {
+      try {
+        await navigator.clipboard.writeText(path);
+      } catch {
+        const textArea = document.createElement("textarea");
+        textArea.value = path;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+    } else {
+      try {
+        await revealItemInDir(path);
+      } catch {
+        console.error("Failed to reveal in file explorer:", path);
+      }
     }
-  }, [path]);
+  }, [path, isMobile]);
 
   return (
     <Container maxWidth="sm" sx={{ py: 2 }}>
@@ -132,8 +132,8 @@ function App() {
           <Typography
             variant="caption"
             noWrap
-            onClick={handleCopyPath}
-            title={`Click to copy:\n${path}`}
+            onClick={handleClickPath}
+            title={isMobile ? "Click to copy path" : "Click to open in file explorer"}
             sx={{
               flex: 1,
               minWidth: 0,
