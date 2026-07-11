@@ -1,1 +1,0 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/directoryselector.tsx","./src/components/messageinput.tsx","./src/components/qrcode.tsx","./src/components/serverstatus.tsx","./src/components/index.ts","./src/hooks/useserver.ts","./src/theme/index.tsx","./src/types/index.ts","./src/utils/api.ts","./src/utils/directories.ts"],"version":"6.0.3"}
