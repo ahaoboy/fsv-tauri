@@ -2,6 +2,9 @@
   "name": "fsv",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "*"
+  ],
   "type": "module",
   "scripts": {
     "pre-check": "oxfmt && oxlint --fix",
@@ -59,8 +62,5 @@
     "oxlint": "^1.89.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.5"
-  },
-  "workspaces": [
-    "*"
-  ]
+  }
 }
