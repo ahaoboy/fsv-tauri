@@ -115,7 +115,7 @@ export function useServer() {
       }
     } catch (err) {
       console.error("Failed to request storage permission:", err);
-      // Non-Android platforms: silently ok
+      setError(String(err));
     }
   }, []);
 

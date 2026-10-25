@@ -42,6 +42,7 @@ pub async fn start_server(
     let server = fsv::run(fsv::Config {
         port,
         path: path.clone().into(),
+        serve: false,
     })
     .await
     .map_err(|e| {

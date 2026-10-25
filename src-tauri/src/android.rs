@@ -76,8 +76,17 @@ pub async fn request_storage_permission(app: tauri::AppHandle) -> Result<bool, S
             tracing::info!("Storage permission not granted, requesting...");
             request_all_files_permission(&app)?;
 
-            // Poll until the user returns from settings and grants permission
+            // Poll until the user returns from settings and grants permission.
+            // Bound the wait so a denied/abandoned request cannot leave the
+            // command pending forever.
+            const TIMEOUT: std::time::Duration = std::time::Duration::from_secs(120);
+            let deadline = tokio::time::Instant::now() + TIMEOUT;
+
             loop {
+                if tokio::time::Instant::now() >= deadline {
+                    tracing::warn!("Timed out waiting for storage permission");
+                    return Err("Timed out waiting for All files access permission".into());
+                }
                 tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                 match has_all_files_permission(&app) {
                     Ok(true) => {
