@@ -131,7 +131,7 @@ jobs:
       #   run: |
       #     cargo install -q cross --git https://github.com/cross-rs/cross
       - name: Build
-        uses: tauri-apps/tauri-action@e839bb55b23d177d8cb537c2e10f41decb2d1089
+        uses: tauri-apps/tauri-action@v1
         with:
           tagName: fsv-v__VERSION__
           releaseName: "fsv v__VERSION__"
